@@ -22,6 +22,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     name: Publier les articles planifiés
+    permissions:
+      contents: write   # Nécessaire pour git push schedule.json
 
     steps:
       - name: 📥 Checkout du repo
