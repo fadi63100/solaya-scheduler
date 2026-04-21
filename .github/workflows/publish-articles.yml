@@ -1,0 +1,48 @@
+name: SOLAYA — Publication automatique du Journal
+
+# ────────────────────────────────────────────────────────────
+# Ce workflow publie automatiquement les articles SOLAYA
+# selon le planning défini dans schedule.json
+#
+# Déclenchement :
+#   • Automatique : chaque lundi, mardi, jeudi à 08h00 UTC+2 (06h00 UTC)
+#   • Manuel      : depuis l'onglet "Actions" de ce repo
+# ────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # Lundi 08:00 Paris (UTC+2 hiver = UTC+1, UTC+2 été)
+    # UTC: 06:00 — couvre les deux fuseaux
+    - cron: '0 6 * * 1'
+    # Jeudi 08:00 Paris
+    - cron: '0 6 * * 4'
+  workflow_dispatch:   # Déclenchement manuel depuis l'interface GitHub
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Publier les articles planifiés
+
+    steps:
+      - name: 📥 Checkout du repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📰 Publier les articles du jour
+        env:
+          SHOPIFY_ACCESS_TOKEN: ${{ secrets.SHOPIFY_ACCESS_TOKEN }}
+        run: node publish-next.mjs
+
+      - name: 💾 Sauvegarder l'état du planning
+        run: |
+          git config user.name  "SOLAYA Bot"
+          git config user.email "bot@mysolaya.com"
+          git add schedule.json
+          git diff --staged --quiet || git commit -m "chore: mise à jour planning $(date +%Y-%m-%d)"
+          git push
